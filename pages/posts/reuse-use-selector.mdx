@@ -1,0 +1,98 @@
+import { withRouter } from "next/router";
+import BlogPost from "../../components/layouts/blog-post";
+
+export const meta = {
+  published: true,
+  publishedAt: "2020-06-18",
+  title: 'Hooks "useSelector" react-redux with dynamic parameters',
+  summary: "How to reuse useSelector function inside a function or renderer.",
+  image: "/public/site-feature.png",
+};
+
+export default withRouter(({ children, router }) => (
+  <BlogPost path={router.pathname} meta={meta}>
+    {children}
+  </BlogPost>
+));
+
+> I'm using **react-redux** v7.2.0 when this article was pulished.
+
+Have you've been using the new redux hooks called `useSelector` into your app?
+If so, have you ever getting issue when you need to reuse the selector logic to get data from your store based parameters?
+
+If yes, I believe we're aligned.
+
+Let me tell you my problem is when using `useSelector` from **react-redux**.
+Let say I have `selectHeavyComputation` selector that do a heavy computation in my store and this function receives `id` as the argument. A different `id` will return different result (Of course. YES).
+
+Unfortunately if you're using `useSelector`, you can only use it once at the top of your component logic, and etc; because this is the [rules of hooks](https://reactjs.org/docs/hooks-rules.html), right?
+
+```js
+const App = () => {
+  const data = useSelector(selectHeavyComputation("1"));
+
+  return <>{data}</>; // html: A
+};
+```
+
+Now, the problem is how to change the parameter value so I can get a different result? I want to change from `1` to `5` and I expect the html result become `E` instead of `A`.
+
+Below is my first try but didn't work.
+
+```js
+const App = () => {
+  const getHeavyProcess = useSelector(selectHeavyComputation);
+
+  return <>{getHeavyProcess("5")}</>; // Error!!!
+};
+```
+
+And then I tried to refactor the curried selector functions but still didn't work either.
+
+After struggling more than 1 hour, and then my final finding that works for me is to create a separate component.
+What? Why I don't think of this at the first place? 😤
+
+So I try to create a separate component apart from the `App` component.
+
+```js
+// HeavyCompute.js
+
+const HeavyCompute = ({ id }) => {
+  const data = useSelector(selectHeavyComputation(id));
+  return <>{data}</>;
+};
+export default React.memo(HeavyCompute);
+
+// App.js
+const App = () => {
+  return <HeavyCompute id="5" />; // html: E
+};
+```
+
+Okay, now it's a happy ending 🤩
+But to be honest I will prefer something like below.
+
+```js
+const App = () => {
+  const getHeavyProcess = useSelector(selectHeavyComputation);
+  return <>{getHeavyProcess("5")}</>; // Error!!!
+};
+```
+
+Or maybe something like `reexecuteQuery` from [urql](https://formidable.com/open-source/urql/docs/basics/queries/#run-a-first-query) which allows me to reexecute the function inside a function or even an effect whenever I want.
+So it could be something like this.
+
+```js
+const App = () => {
+  const [value, selectHeavyComputation] = useSelector(selectHeavyComputation);
+  return <>{selectHeavyComputation("5")}</>; // html: E
+};
+```
+
+Why do I need this? Because it doesn't requires me to create a separate component to achive the samething LOL.
+
+## Conclusion
+
+Right now, you need to create a separate component to reuse your selector logic if you're using `useSelector`, but if you're using the `connect` from **react-redux** I think this is not an issue at all.
+
+Thanks.
