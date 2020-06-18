@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "name": "blog",
+  "alias": ["roh.app"],
+  "builds": [{ "src": "package.json", "use": "@now/next" }],
+  "routes": [
+    { "src": "/feed.json", "dest": "/_next/public/feed.json" },
+    { "src": "/blog/(?<page>[^/]+)$", "dest": "/blog?page=$page" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
